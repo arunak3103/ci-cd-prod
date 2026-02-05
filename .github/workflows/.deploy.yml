@@ -1,0 +1,67 @@
+name: Production Deployment
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  S3_BUCKET: ci-cd-prod-artifacts
+  INSTANCE_ID: i-00d7fc5057fd3f7dc
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Website
+        run: |
+          mkdir build
+          cp index.html build/
+          zip -r website.zip build
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: website
+          path: website.zip
+
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: website
+
+      - name: Configure AWS OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::ACCOUNT-ID:role/github-oidc-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload to S3
+        run: aws s3 cp website.zip s3://${{ env.S3_BUCKET }}/website.zip
+
+      - name: Deploy via SSM
+        run: |
+          aws ssm send-command \
+          --instance-ids "${{ env.INSTANCE_ID }}" \
+          --document-name "AWS-RunShellScript" \
+          --parameters commands='[
+            "aws s3 cp s3://${{ env.S3_BUCKET }}/website.zip /home/ec2-user/",
+            "sudo rm -rf /var/www/html/*",
+            "sudo unzip -o /home/ec2-user/website.zip -d /var/www/html",
+            "sudo systemctl restart httpd"
+          ]'
