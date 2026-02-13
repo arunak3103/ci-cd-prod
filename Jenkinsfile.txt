@@ -37,7 +37,7 @@ pipeline {
                 sh '''
                 aws ecs update-service \
                 --cluster ecs-demo-cluster \
-                --service ecs-demo-service \
+                --service tomcat-task-service-7mj6347v \
                 --force-new-deployment
                 '''
             }
