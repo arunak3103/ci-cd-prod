@@ -1,0 +1,46 @@
+pipeline {
+    agent any
+
+    environment {
+        AWS_REGION = 'us-east-1'
+        ECR_REPO = '112864514073.dkr.ecr.us-east-1.amazonaws.com/web-test'
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                git 'https://github.com/arunak3103/ci-cd-prod.git'
+            }
+        }
+
+        stage('Build Image') {
+            steps {
+                sh 'docker build -t ecs-demo .'
+            }
+        }
+
+        stage('Push to ECR') {
+            steps {
+                sh '''
+                aws ecr get-login-password --region $AWS_REGION \
+                | docker login --username AWS --password-stdin $ECR_REPO
+
+                docker tag ecs-demo $ECR_REPO:latest
+                docker push $ECR_REPO:latest
+                '''
+            }
+        }
+
+        stage('Deploy ECS') {
+            steps {
+                sh '''
+                aws ecs update-service \
+                --cluster ecs-demo-cluster \
+                --service ecs-demo-service \
+                --force-new-deployment
+                '''
+            }
+        }
+    }
+}
