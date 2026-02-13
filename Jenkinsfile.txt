@@ -52,7 +52,7 @@ pipeline {
                 sh '''
                 # Force ECS service update to deploy new image
                 aws ecs update-service \
-                    --cluster ecs-demo-cluster \
+                    --cluster ecs-demo \
                     --service tomcat-task-service-7mj6347v \
                     --force-new-deployment \
                     --region $AWS_REGION
