@@ -6,13 +6,12 @@ pipeline {
         ECR_REPO = '112864514073.dkr.ecr.us-east-1.amazonaws.com/web-test'
     }
 
-    stages {
-
-        stage('Checkout') {
-            steps {
-                git 'https://github.com/arunak3103/ci-cd-prod.git'
-            }
-        }
+    stage('Checkout') {
+    steps {
+        git branch: 'main',
+            url: 'https://github.com/arunak3103/ci-cd-prod.git'
+     }
+ }
 
         stage('Build Image') {
             steps {
